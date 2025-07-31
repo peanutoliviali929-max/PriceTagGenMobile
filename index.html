@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Tag Generator - Direct Edit</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link id="google-fonts-link" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800;900&family=Inter:wght@400&family=Libre+Barcode+EAN13+Text&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Price Tag Styles --- */
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800;900&family=Inter:wght@400&family=Libre+Barcode+EAN13+Text&display=swap');
+
+        .barcode-font {
+            font-family: 'Libre Barcode EAN13 Text', cursive;
+        }
+
+        .price-tag-container {
+            font-family: 'Inter', sans-serif;
+            width: 3in;
+            height: 1.25in;
+            background: #FFFFFF;
+            position: relative;
+            overflow: hidden;
+            color: #000000;
+            box-sizing: border-box;
+            flex-shrink: 0; 
+            position: relative; 
+        }
+
+        /* --- MODIFIED SECTION --- */
+        .price-tag-left {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 60%; 
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-start;
+        }
+        
+        .brand-box {
+            box-sizing: border-box;
+            border: 1px solid #000000;
+            padding: 5px;
+            display: inline-block;
+            min-width: 20px;
+            max-width: 100%;
+            height: auto;
+            min-height: 24px;
+            font-size: 14px;
+            line-height: 16px;
+            font-weight: 400;
+            word-break: break-word;
+            white-space: pre-line;
+            overflow-wrap: break-word;
+        }
+        
+        .product-box {
+            font-size: 14px;
+            line-height: 16px;
+            font-weight: 400;
+            max-width: 100%;
+            word-break: break-word;
+            min-height: 16px;
+        }
+        
+        .price-tag-right {
+            position: absolute;
+            left: 60%; 
+            top: 0px;
+            width: 40%; 
+            height: 80px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            padding: 10px 12px 6px 0px;
+            box-sizing: border-box;
+        }
+
+        .price-main-box {
+            display: inline-flex; 
+            flex-direction: row;
+            justify-content: flex-end;
+            align-items: center; 
+            background: #8EBC77;
+            height: 72px; 
+        }
+
+        .price-dollars-box {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 2px 4px 5px 6px;
+            background: #8EBC77;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 800;
+            font-size: 58px;
+            text-align: right;
+            line-height: 1;
+        }
+
+        .price-cents-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 3px;
+            width: 40px;
+        }
+
+        .price-cents-box {
+            display: flex;
+            align-items: center;
+            padding: 0px 6px 0px 0px;
+            background: #8EBC77;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 29px;
+            line-height: 26px;
+            text-align: right;
+            width: 40px;
+            height: 26px;
+        }
+
+        .price-sale-box {
+            display: flex;
+            align-items: center;
+            padding: 0px 6px 3px 0px;
+            background: #8EBC77;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 21px;
+            line-height: 16px;
+            text-align: right;
+            width: 30px;
+            height: 19px;
+        }
+
+        .barcode-clipper {
+            position: absolute;
+            height: 28px;
+            left: 60%; 
+            right: 12px;
+            top: 80px;
+            overflow: hidden;
+        }
+        /* --- END MODIFIED SECTION --- */
+
+        .barcode-text-content {
+            position: relative;
+            top: -40px;
+            font-size: 72px; 
+            line-height: 68px; 
+            text-align: right;
+            color: #000000;
+        }
+
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          font-style: italic;
+        }
+        
+        .preview-letter-wrapper, .preview-4x6-wrapper {
+            overflow: auto;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background-color: #e5e7eb;
+        }
+        .preview-letter, .preview-4x6 {
+            background: white;
+            box-sizing: border-box;
+            transform-origin: top center;
+            margin: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .preview-letter {
+            width: 8.5in;
+            min-height: 11in;
+            padding: 0.5in 1.25in;
+            display: grid;
+            grid-template-columns: repeat(2, 3in);
+            grid-auto-rows: 1.25in;
+            gap: 0;
+            justify-content: center;
+            transform: scale(0.25);
+        }
+        .preview-4x6 {
+            width: 4in;
+            height: 6in;
+            padding: 0.75in 0.5in;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 0;
+            transform: scale(0.5);
+        }
+
+        /* --- REWRITTEN PRINT CSS FOR ACCURATE SIZING --- */
+        @media print {
+            /* This is now handled dynamically by JavaScript */
+            /* @page { margin: 0; } */
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+                font-size: 12pt !important;
+            }
+
+            body > :not(.print-area) {
+                display: none !important;
+            }
+
+            .print-area {
+                display: block !important;
+                position: relative !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .print-area .delete-btn {
+                display: none !important;
+            }
+            
+            /* Page layout is now controlled by @page rule injected via JS */
+            /* The padding has been removed and is now a margin in the @page rule */
+            .print-letter {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: grid !important;
+                grid-template-columns: repeat(2, 3in) !important;
+                grid-auto-rows: 1.25in !important;
+                gap: 0 !important; 
+                justify-content: start !important;
+                align-content: start !important;
+                page-break-after: always !important;
+                box-sizing: border-box !important;
+            }
+
+            .print-4x6 {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                align-items: center !important;
+                gap: 0 !important; 
+                page-break-after: always !important;
+                box-sizing: border-box !important;
+            }
+
+            .print-cut-lines, .print-cut-lines-4x6 {
+                page-break-before: always !important;
+                background: white !important;
+            }
+            
+            .cut-line-box {
+                border: 1px dashed #999 !important;
+                box-sizing: border-box !important;
+            }
+            
+            .price-tag-container {
+                width: 3in !important;
+                height: 1.25in !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                break-inside: avoid !important;
+                background: white !important;
+                box-sizing: border-box !important;
+                flex-shrink: 0 !important;
+                position: relative !important;
+                overflow: hidden !important;
+            }
+
+            .price-main-box, .price-dollars-box, .price-cents-box, .price-sale-box {
+                background: #8EBC77 !important;
+            }
+
+            .brand-box { border: 1px solid #000000 !important; }
+            .price-dollars-box { font-size: 58px !important; }
+            .price-cents-box { font-size: 29px !important; }
+            .price-sale-box { font-size: 21px !important; }
+            .barcode-text-content { font-size: 72px !important; }
+        }
+        
+        .loader {
+            border: 5px solid #f3f3f3; border-radius: 50%;
+            border-top: 5px solid #3498db; width: 50px; height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="flex flex-col items-center">
+            <div class="loader"></div>
+            <p class="text-white mt-4">Generating PDF, please wait...</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Price Tag Generator</h1>
+            <p class="text-lg text-gray-600 mt-2">Edit your price tags directly and print with perfect positioning</p>
+        </header>
+
+        <div id="live-preview-container" class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 flex-wrap">
+                <h2 class="text-2xl font-semibold">Edit & Preview</h2>
+                <div class="flex items-center gap-2 flex-wrap justify-center">
+                    <button id="addRowBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Add Product</button>
+                    <button id="print-letter-iphone" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Generate iPhone PDF</button>
+                    <button id="print-letter" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Print Letter (Desktop)</button>
+                    <button id="print-4x6" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Print 4x6</button>
+                    <div id="preview-toggle" class="flex items-center border border-gray-300 rounded-md">
+                        <button id="preview-tags-btn" class="px-3 py-1 transition-colors">Tags</button>
+                        <button id="preview-letter-btn" class="px-3 py-1 transition-colors">Letter</button>
+                        <button id="preview-4x6-btn" class="px-3 py-1 transition-colors">4x6</button>
+                    </div>
+                </div>
+            </div>
+            <div id="live-preview-area" class="flex flex-wrap justify-center gap-4 p-4 bg-gray-50 rounded-md min-h-[420px] items-start">
+                </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold mb-4 text-blue-600">🖨️ Alternative: dom-to-image PDF</h3>
+                <p class="text-gray-600 mb-4">If direct print doesn't work well, try this PDF generation method.</p>
+                <div class="space-y-2 mb-4">
+                    <button id="domimg-letter" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Export Letter PDF</button>
+                    <button id="domimg-4x6" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Export 4x6 PDF</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold mb-4 text-purple-600">📄 Alternative: Direct PDF</h3>
+                <p class="text-gray-600 mb-4">Creates a PDF directly for guaranteed positioning.</p>
+                <div class="space-y-2 mb-4">
+                    <button id="direct-letter" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Direct Letter PDF</button>
+                    <button id="direct-4x6" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Direct 4x6 PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-2 text-yellow-800">📝 Instructions for Printing:</h3>
+            <ul class="text-yellow-700 list-disc list-inside space-y-2">
+                <li>For iPhones, click <strong>"Generate iPhone PDF"</strong>. A file will download. Open that file and print it.</li>
+                <li>For Desktops, click <strong>"Print Letter (Desktop)"</strong>.</li>
+                <li>In the print preview, ensure the <strong>Scale</strong> is set to <strong>100%</strong> or "Actual Size".</li>
+                <li>Turn ON <strong>"Print Backgrounds"</strong> for the green price boxes.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="print-letter-area" class="print-area hidden"></div>
+    <div id="print-4x6-area" class="print-area hidden"></div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let tagsData = [
+            { id: Date.now(), brand: 'ACME Foods', product: 'Organic Apples', dollars: '3', cents: '99', sale: '/LB', barcode: '1234567890128' },
+            { id: Date.now() + 1, brand: 'Store Brand', product: 'Milk 2%', dollars: '4', cents: '29', sale: 'EA', barcode: '9876543210987' },
+            { id: Date.now() + 2, brand: 'Fresh Co', product: 'Bananas', dollars: '2', cents: '49', sale: '/LB', barcode: '4567891234560' },
+        ];
+
+        let previewMode = 'tags';
+
+        // --- DOM ELEMENTS ---
+        const livePreviewArea = document.getElementById('live-preview-area');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const previewToggle = document.getElementById('preview-toggle');
+        const previewTagsBtn = document.getElementById('preview-tags-btn');
+        const previewLetterBtn = document.getElementById('preview-letter-btn');
+        const preview4x6Btn = document.getElementById('preview-4x6-btn');
+
+        // --- RENDERING FUNCTIONS ---
+        function renderPreview() {
+            livePreviewArea.innerHTML = '';
+
+            previewTagsBtn.className = 'px-3 py-1 rounded-l-md transition-colors ' + (previewMode === 'tags' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700');
+            previewLetterBtn.className = 'px-3 py-1 transition-colors ' + (previewMode === 'letter' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700');
+            preview4x6Btn.className = 'px-3 py-1 rounded-r-md transition-colors ' + (previewMode === '4x6' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700');
+
+            if (previewMode === 'tags') {
+                if (tagsData.length === 0) {
+                    livePreviewArea.innerHTML = `<p class="text-gray-500">Add a product to see a preview.</p>`;
+                } else {
+                    tagsData.forEach(tag => livePreviewArea.appendChild(createPriceTagElement(tag)));
+                }
+            } else if (previewMode === 'letter') {
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'preview-letter-wrapper';
+                const letterPage = document.createElement('div');
+                letterPage.className = 'preview-letter';
+                tagsData.slice(0, 16).forEach(tag => letterPage.appendChild(createPriceTagElement(tag)));
+                pageWrapper.appendChild(letterPage);
+                livePreviewArea.appendChild(pageWrapper);
+            } else if (previewMode === '4x6') {
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'preview-4x6-wrapper';
+                const fourBySixPage = document.createElement('div');
+                fourBySixPage.className = 'preview-4x6';
+                tagsData.slice(0, 4).forEach(tag => fourBySixPage.appendChild(createPriceTagElement(tag)));
+                pageWrapper.appendChild(fourBySixPage);
+                livePreviewArea.appendChild(pageWrapper);
+            }
+        }
+
+        function createPriceTagElement(tag) {
+            const tagEl = document.createElement('div');
+            tagEl.className = 'price-tag-container';
+            tagEl.dataset.id = tag.id;
+            tagEl.innerHTML = `
+                <div class="price-tag-left">
+                    <div class="brand-box" contenteditable="true" data-field="brand" data-placeholder="Brand">${tag.brand || ''}</div>
+                    <div class="product-box" contenteditable="true" data-field="product" data-placeholder="Product Name">${tag.product || ''}</div>
+                </div>
+                <div class="price-tag-right">
+                    <div class="price-main-box">
+                        <div class="price-dollars-box">
+                            <span contenteditable="true" data-field="dollars" data-placeholder="$$">${tag.dollars || ''}</span>
+                        </div>
+                        <div class="price-cents-section">
+                            <div class="price-cents-box">
+                                <span contenteditable="true" data-field="cents" data-placeholder="¢¢">${tag.cents || ''}</span>
+                            </div>
+                            <div class="price-sale-box">
+                                <span contenteditable="true" data-field="sale" data-placeholder="/EA">${tag.sale || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="barcode-clipper">
+                    <div class="barcode-text-content barcode-font" contenteditable="true" data-field="barcode" data-placeholder="Barcode (13 digits)">${(tag.barcode || '').slice(0, 13)}</div>
+                </div>
+                <button class="delete-btn absolute top-0 right-0 p-1 leading-none text-xl text-red-400 hover:text-red-700 hover:bg-red-100 rounded-bl-lg z-10 transition-colors" title="Delete Tag">&times;</button>
+            `;
+            return tagEl;
+        }
+
+        // --- EVENT HANDLERS ---
+        addRowBtn.addEventListener('click', () => {
+            tagsData.push({ id: Date.now(), brand: '', product: '', dollars: '', cents: '', sale: '', barcode: '' });
+            if (previewMode !== 'tags') {
+                previewMode = 'tags';
+            }
+            renderPreview();
+        });
+
+        livePreviewArea.addEventListener('input', (e) => {
+            const target = e.target;
+            if (target.hasAttribute('contenteditable')) {
+                const tagEl = target.closest('.price-tag-container');
+                if (!tagEl) return;
+                const id = Number(tagEl.dataset.id);
+                const field = target.dataset.field;
+                const tagData = tagsData.find(t => t.id === id);
+                if (!tagData) return;
+
+                let value = target.innerText;
+                if (field === 'barcode') {
+                    value = value.replace(/\D/g, '').slice(0, 13);
+                } else if (field !== 'brand') {
+                    value = value.replace(/[\r\n]/g, ' '); 
+                }
+                tagData[field] = value;
+            }
+        });
+        
+        livePreviewArea.addEventListener('blur', (e) => {
+            const target = e.target;
+            if (target.dataset.field === 'barcode') {
+                 const tagEl = target.closest('.price-tag-container');
+                 if (!tagEl) return;
+                 const id = Number(tagEl.dataset.id);
+                 const tagData = tagsData.find(t => t.id === id);
+                 if (tagData && target.innerText !== tagData.barcode) {
+                    target.innerText = tagData.barcode;
+                 }
+            }
+        }, true);
+
+        livePreviewArea.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-btn')) {
+                const tagEl = e.target.closest('.price-tag-container');
+                if (!tagEl) return;
+                const id = Number(tagEl.dataset.id);
+                tagsData = tagsData.filter(t => t.id !== id);
+                renderPreview();
+            }
+        });
+
+        previewToggle.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            if (e.target.id === 'preview-tags-btn') previewMode = 'tags';
+            else if (e.target.id === 'preview-letter-btn') previewMode = 'letter';
+            else if (e.target.id === 'preview-4x6-btn') previewMode = '4x6';
+            renderPreview();
+        });
+
+        // --- REWRITTEN PRINT FUNCTION WITH DYNAMIC @page RULE ---
+        function setupAndPrint(format) {
+            const isLetter = format === 'letter';
+            const printArea = document.getElementById(isLetter ? 'print-letter-area' : 'print-4x6-area');
+            printArea.innerHTML = '';
+
+            const pageStyle = document.createElement('style');
+            pageStyle.id = 'dynamic-print-style';
+            if (isLetter) {
+                pageStyle.innerHTML = `@page { size: 8.5in 11in; margin: 0.5in 1.25in; }`;
+            } else {
+                pageStyle.innerHTML = `@page { size: 4in 6in; margin: 0.75in 0.5in; }`;
+            }
+            document.head.appendChild(pageStyle);
+
+            const tagsPage = document.createElement('div');
+            tagsPage.className = isLetter ? 'print-letter' : 'print-4x6';
+            const tagsToPrint = isLetter ? tagsData.slice(0, 16) : tagsData.slice(0, 4);
+            tagsToPrint.forEach(tag => tagsPage.appendChild(createPriceTagElement(tag)));
+            
+            const cutLinesPage = document.createElement('div');
+            cutLinesPage.className = isLetter ? 'print-letter print-cut-lines' : 'print-cut-lines-4x6';
+            const numCutLines = isLetter ? 16 : 4;
+            for (let i = 0; i < numCutLines; i++) {
+                const cutBox = document.createElement('div');
+                cutBox.className = 'cut-line-box';
+                cutBox.style.width = '3in';
+                cutBox.style.height = '1.25in';
+                cutLinesPage.appendChild(cutBox);
+            }
+
+            printArea.appendChild(tagsPage);
+            printArea.appendChild(cutLinesPage);
+            
+            printArea.classList.remove('hidden');
+
+            setTimeout(() => {
+                window.print();
+                printArea.classList.add('hidden');
+                const dynamicStyle = document.getElementById('dynamic-print-style');
+                if (dynamicStyle) {
+                    document.head.removeChild(dynamicStyle);
+                }
+            }, 150);
+        }
+        
+        // --- IPHONE FIX: Generate a precise PDF using dom-to-image with embedded fonts ---
+        
+        let embeddedFontStyles = null; // Cache for the generated font styles
+
+        /**
+         * Fetches the Google Fonts CSS, extracts the font file URLs, converts them to
+         * base64 data URLs, and creates a <style> block with the embedded fonts.
+         * This ensures dom-to-image can render the custom fonts correctly.
+         * The result is cached to avoid re-fetching on subsequent clicks.
+         * @returns {Promise<string>} - A promise that resolves with the full CSS @font-face string.
+         */
+        async function getEmbeddedFontStyles() {
+            if (embeddedFontStyles) {
+                return embeddedFontStyles;
+            }
+
+            const fontLink = document.getElementById('google-fonts-link').href;
+            const css = await fetch(fontLink).then(res => res.text());
+            
+            const fontUrls = css.match(/url\(https?:\/\/[^)]+\)/g);
+            if (!fontUrls) return '';
+
+            const fontPromises = fontUrls.map(url => {
+                const fontUrl = url.replace(/url\((['"]?)(.*?)\1\)/, '$2');
+                return fetch(fontUrl)
+                    .then(res => res.blob())
+                    .then(blob => new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    }));
+            });
+
+            const base64Fonts = await Promise.all(fontPromises);
+            
+            let finalCss = css;
+            fontUrls.forEach((url, i) => {
+                finalCss = finalCss.replace(url, `url(${base64Fonts[i]})`);
+            });
+
+            embeddedFontStyles = finalCss;
+            return embeddedFontStyles;
+        }
+        
+        async function generateIphonePdf() {
+            loadingOverlay.style.display = 'flex';
+            const { jsPDF } = window.jspdf;
+            
+            const styleId = 'temp-embedded-fonts';
+
+            try {
+                // 1. Get and embed the fonts
+                const fontCss = await getEmbeddedFontStyles();
+                const fontStyleTag = document.createElement('style');
+                fontStyleTag.id = styleId;
+                fontStyleTag.innerHTML = fontCss;
+                document.head.appendChild(fontStyleTag);
+
+                // Give the browser a moment to apply the new styles
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const pdf = new jsPDF({ orientation: 'p', unit: 'in', format: 'letter' });
+
+                const tagWidth = 3;
+                const tagHeight = 1.25;
+                const pageTopMargin = 0.5;
+                const pageLeftMargin = 1.25;
+                const tagsToPrint = tagsData.slice(0, 16);
+                
+                const tempRenderContainer = document.createElement('div');
+                tempRenderContainer.style.position = 'fixed';
+                tempRenderContainer.style.left = '-9999px';
+                tempRenderContainer.style.top = '-9999px';
+                document.body.appendChild(tempRenderContainer);
+
+                // --- PAGE 1: RENDER TAGS ---
+                for (let i = 0; i < tagsToPrint.length; i++) {
+                    const tagData = tagsToPrint[i];
+                    const tagEl = createPriceTagElement(tagData);
+                    const deleteBtn = tagEl.querySelector('.delete-btn');
+                    if(deleteBtn) deleteBtn.remove();
+                    
+                    tempRenderContainer.innerHTML = '';
+                    tempRenderContainer.appendChild(tagEl);
+
+                    // Let the browser render the tag with the now-embedded fonts
+                    await new Promise(resolve => setTimeout(resolve, 50));
+
+                    const dataUrl = await domtoimage.toPng(tagEl, {
+                        width: tagEl.offsetWidth * 2, // 2x resolution for crispness
+                        height: tagEl.offsetHeight * 2,
+                        style: {
+                            transform: 'scale(2)',
+                            transformOrigin: 'top left'
+                        }
+                    });
+                    
+                    const col = i % 2;
+                    const row = Math.floor(i / 2);
+                    const x = pageLeftMargin + (col * tagWidth);
+                    const y = pageTopMargin + (row * tagHeight);
+                    
+                    pdf.addImage(dataUrl, 'PNG', x, y, tagWidth, tagHeight);
+                }
+                
+                document.body.removeChild(tempRenderContainer);
+
+                // --- PAGE 2: RENDER CUT LINES ---
+                pdf.addPage();
+                for (let i = 0; i < tagsToPrint.length; i++) {
+                    const col = i % 2;
+                    const row = Math.floor(i / 2);
+                    const x = pageLeftMargin + (col * tagWidth);
+                    const y = pageTopMargin + (row * tagHeight);
+                    // Set a very thin line width and a fine dash pattern
+                    pdf.setLineWidth(0.01);
+                    pdf.setLineDashPattern([0.05, 0.05], 0);
+                    pdf.rect(x, y, tagWidth, tagHeight);
+                }
+
+                pdf.save('printable-tags-iphone.pdf');
+
+            } catch (error) {
+                console.error("PDF Generation Failed:", error);
+                alert("Sorry, there was an error generating the PDF. Please try again.");
+            } finally {
+                // Cleanup the embedded font style tag
+                const tempStyle = document.getElementById(styleId);
+                if (tempStyle) tempStyle.remove();
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        document.getElementById('print-letter').addEventListener('click', () => setupAndPrint('letter'));
+        document.getElementById('print-4x6').addEventListener('click', () => setupAndPrint('4x6'));
+        document.getElementById('print-letter-iphone').addEventListener('click', generateIphonePdf);
+
+
+        // --- PDF Generation Functions (Unchanged) ---
+        async function generatePdfWithDomToImage(format) {
+            loadingOverlay.style.display = 'flex';
+            const { jsPDF } = window.jspdf;
+            const isLetter = format === 'letter';
+            
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'fixed';
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.background = 'white';
+            
+            Object.assign(tempContainer.style, {
+                width: isLetter ? '8.5in' : '4in',
+                height: isLetter ? '11in' : '6in',
+                padding: isLetter ? '0.5in 1.25in' : '0.75in 0.5in', // Match print margins
+                background: 'white',
+                boxSizing: 'border-box',
+            });
+
+            if (isLetter) {
+                Object.assign(tempContainer.style, {
+                    display: 'grid', gridTemplateColumns: 'repeat(2, 3in)',
+                    gridAutoRows: '1.25in', gap: '0', justifyContent: 'start',
+                });
+                tagsData.slice(0, 16).forEach(tag => tempContainer.appendChild(createPriceTagElement(tag)));
+            } else {
+                 Object.assign(tempContainer.style, {
+                    display: 'flex', flexDirection: 'column',
+                    justifyContent: 'flex-start', alignItems: 'center', gap: '0',
+                });
+                tagsData.slice(0, 4).forEach(tag => tempContainer.appendChild(createPriceTagElement(tag)));
+            }
+            
+            document.body.appendChild(tempContainer);
+            
+            try {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const dataUrl = await domtoimage.toPng(tempContainer, {
+                    width: tempContainer.offsetWidth, height: tempContainer.offsetHeight,
+                    quality: 1.0, style: { transform: 'scale(1)', margin: 0 }
+                });
+                
+                const pdf = new jsPDF({ orientation: 'p', unit: 'in', format: isLetter ? 'letter' : [4, 6] });
+                pdf.addImage(dataUrl, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+                pdf.save(`price-tags-domtoimage-${format}.pdf`);
+            } catch (error) {
+                console.error('dom-to-image error:', error);
+                alert('PDF generation failed. Please try the direct print option.');
+            } finally {
+                document.body.removeChild(tempContainer);
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        document.getElementById('domimg-letter').addEventListener('click', () => generatePdfWithDomToImage('letter'));
+        document.getElementById('domimg-4x6').addEventListener('click', () => generatePdfWithDomToImage('4x6'));
+
+        function generateDirectPdf(format) {
+            loadingOverlay.style.display = 'flex';
+            const { jsPDF } = window.jspdf;
+            const isLetter = format === 'letter';
+            const pdf = new jsPDF({ orientation: 'p', unit: 'pt', format: isLetter ? 'letter' : [288, 432] });
+            
+            const tagWidth = 216; // 3in
+            const tagHeight = 90;  // 1.25in
+            const tags = isLetter ? tagsData.slice(0, 16) : tagsData.slice(0, 4);
+            const letterLeftMargin = 90; // 1.25in
+            const letterTopMargin = 36;  // 0.5in
+            
+            tags.forEach((tag, index) => {
+                let x, y;
+                if (isLetter) {
+                    const col = index % 2;
+                    const row = Math.floor(index / 2);
+                    x = letterLeftMargin + (col * tagWidth);
+                    y = letterTopMargin + (row * tagHeight);
+                } else {
+                    x = (288 - tagWidth) / 2; // Centered
+                    y = 54 + (index * tagHeight); // 0.75in margin
+                }
+                
+                pdf.setDrawColor(0).rect(x, y, tagWidth, tagHeight); // Black border for the tag
+                pdf.setDrawColor(0).rect(x + 7, y + 7, 122, 24); // Brand box
+                pdf.setFontSize(10).setFont("helvetica", "normal").text(tag.brand || '', x + 10, y + 22, { maxWidth: 116 });
+                pdf.setFontSize(10).text(tag.product || '', x + 7, y + 45, { maxWidth: 122 });
+                pdf.setFillColor(142, 188, 119).rect(x + 133, y + 7, 76, 68, 'F');
+                pdf.setFont("helvetica", "bold").setTextColor(0).setFontSize(44).text(tag.dollars || '', x + 138, y + 55);
+                pdf.setFont("helvetica", "bold").setFontSize(22).text(tag.cents || '', x + 180, y + 34);
+                pdf.setFont("helvetica", "bold").setFontSize(16).text(tag.sale || '', x + 180, y + 58);
+                // Barcode text is illustrative in PDF
+            });
+            
+            pdf.save(`price-tags-direct-${format}.pdf`);
+            loadingOverlay.style.display = 'none';
+        }
+
+        document.getElementById('direct-letter').addEventListener('click', () => generateDirectPdf('letter'));
+        document.getElementById('direct-4x6').addEventListener('click', () => generateDirectPdf('4x6'));
+
+        // --- INITIALIZE ---
+        renderPreview();
+    </script>
+</body>
+</html>
